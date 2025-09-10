@@ -1,162 +1,290 @@
-import React, { useEffect, useState, useRef } from "react";
-import * as XLSX from "xlsx"; // install with npm if needed
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-const AddData = () => {
-  const [isDark, setIsDark] = useState(localStorage.getItem("theme") === "dark");
+const addDataCss = `
+:root {
+  --beach-sand: #f9e1e0;
+  --coral-pink: #faadb9;
+  --mauve-rose: #bc85a3;
+  --lavender: #9799ba;
+  --ocean-blue: #4a7ba6;
+  --text: #1b1b1b;
+  --text-dark: #ffffff;
+  --bg-start: var(--beach-sand);
+  --bg-end: var(--coral-pink);
+  --bg-start-dark: #101322;
+  --bg-end-dark: #1f2a44;
+  --brand-start: var(--mauve-rose);
+  --brand-end: var(--lavender);
+  --glass: rgba(255,255,255,0.16);
+  --glass-dark: rgba(255,255,255,0.12);
+  --input: rgba(255,255,255,0.96);
+  --input-dark: rgba(255,255,255,0.15);
+  --focus: rgba(74,123,166,0.55);
+}
+* { box-sizing: border-box; }
+.add-data-root, body {
+  font-family: 'Nunito Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+  color: var(--text);
+  padding-top: 90px;
+  transition: background 450ms ease, color 300ms ease;
+  min-height: 100vh;
+}
+.add-data-root.dark {
+  background: linear-gradient(135deg, var(--bg-start-dark), var(--bg-end-dark));
+  color: var(--text-dark);
+}
+nav.navbar {
+  background: linear-gradient(90deg, var(--brand-start), var(--brand-end));
+  min-height: 70px;
+  transition: background 450ms ease;
+}
+.add-data-root.dark nav.navbar {
+  background: linear-gradient(90deg, var(--ocean-blue), #2a3b5f);
+}
+.navbar-brand img {
+  height: 50px;
+  width: auto;
+  border-radius: 50%;
+  background: #fff;
+  padding: 3px;
+  margin-right: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.theme-toggle {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  width: 74px;
+  height: 38px;
+  border-radius: 999px;
+  background: linear-gradient(45deg, var(--brand-start), var(--brand-end));
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  cursor: pointer;
+  user-select: none;
+  transition: background 450ms ease, transform 150ms ease;
+  z-index: 1100;
+}
+.theme-toggle:active { transform: scale(0.98); }
+.theme-toggle.dark {
+  background: linear-gradient(45deg, var(--ocean-blue), #2a3b5f);
+}
+.toggle-slider {
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1), background 420ms ease;
+}
+.theme-toggle.dark .toggle-slider {
+  transform: translateX(36px);
+  background: #0e1016;
+}
+.toggle-icon {
+  font-size: 16px;
+  transition: opacity 280ms ease;
+}
+.sun-icon { opacity: 1; }
+.moon-icon { position: absolute; opacity: 0; }
+.theme-toggle.dark .sun-icon { opacity: 0; }
+.theme-toggle.dark .moon-icon { opacity: 1; }
+.form-card {
+  background: var(--glass);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+  backdrop-filter: saturate(140%) blur(6px);
+  transition: background 450ms ease, color 300ms ease, transform 200ms ease;
+}
+.form-card:hover { transform: translateY(-2px); }
+.add-data-root.dark .form-card { background: var(--glass-dark); }
+.form-control {
+  background: var(--input);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  transition: background 300ms ease, color 300ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+.add-data-root.dark .form-control {
+  background: var(--input-dark);
+  color: var(--text-dark);
+  border-color: rgba(255,255,255,0.18);
+}
+.form-control::placeholder { color: rgba(0,0,0,0.45); }
+.add-data-root.dark .form-control::placeholder { color: rgba(255,255,255,0.7); }
+.form-control:focus {
+  box-shadow: 0 0 0 0.25rem var(--focus);
+  border-color: var(--ocean-blue);
+  outline: none;
+}
+.btn-primary {
+  background: linear-gradient(45deg, var(--brand-start), var(--brand-end));
+  border: none;
+  transition: transform 150ms ease, filter 200ms ease;
+}
+.btn-warning {
+  background: linear-gradient(45deg, #ffd54f, #ffb300);
+  border: none;
+  color: #111;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+.table-responsive { border-radius: 12px; overflow: auto; }
+.badge-valid { background-color: #2e7d32; }
+.badge-invalid { background-color: #c62828; }
+`;
+
+const CODE_REGEX = /^[a-z]{3}\/[a-z]{3}\/\d{2}\/\d{3}$/;
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]
+  ));
+}
+
+function AddData() {
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("theme") === "dark");
+  const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem("students") || "[]"));
+
+  // Single entry states
+  const [singleName, setSingleName] = useState("");
+  const [singleCode, setSingleCode] = useState("");
+
+  // Bulk upload states
+  const [file, setFile] = useState(null);
   const [parsedRows, setParsedRows] = useState([]);
-  const [bulkStats, setBulkStats] = useState({ valid: 0, invalid: 0 });
-  const [bulkPreview, setBulkPreview] = useState([]);
-  const [fileSelected, setFileSelected] = useState(false);
-  const [importEnabled, setImportEnabled] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [bulkStats, setBulkStats] = useState("");
+  const [validCount, setValidCount] = useState(0);
+  const [invalidCount, setInvalidCount] = useState(0);
+
   const fileInputRef = useRef();
+  const previewBodyRef = useRef();
   const navigate = useNavigate();
 
+  // Theme state
   useEffect(() => {
-    document.body.classList.toggle("dark", isDark);
     localStorage.setItem("theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-  function getStudents() {
-    return JSON.parse(localStorage.getItem("students") || "[]");
-  }
-  function setStudents(arr) {
-    localStorage.setItem("students", JSON.stringify(arr));
-  }
+  // Save students on change
+  useEffect(() => {
+    localStorage.setItem("students", JSON.stringify(students));
+  }, [students]);
 
-  // Single entry
-  const handleAdd = (e) => {
+  // Handlers
+  const logout = () => {
+    localStorage.removeItem("adminName");
+    navigate("/"); // change to your login path if needed
+  };
+
+  const handleSingleSubmit = e => {
     e.preventDefault();
-    const name = e.target.singleName.value.trim();
-    const code = e.target.singleCode.value.trim();
-    const regex = /^[a-z]{3}\/[a-z]{3}\/\d{2}\/\d{3}$/;
-    if (!regex.test(code)) return alert("Invalid code format. Expected: bwu/bts/23/001");
-    const students = getStudents();
-    if (students.some(s => s.code.toLowerCase() === code.toLowerCase())) return alert("Code already exists.");
-    students.push({ name, code });
-    setStudents(students);
-    alert(`Added:\n${name} (${code})`);
-    e.target.reset();
+    if (!CODE_REGEX.test(singleCode)) {
+      alert("Invalid code format. Expected: bwu/bts/23/001");
+      return;
+    }
+    if (students.some(s => s.code.toLowerCase() === singleCode.toLowerCase())) {
+      alert("Code already exists.");
+      return;
+    }
+    setStudents([...students, { name: singleName, code: singleCode }]);
+    alert(`Added:\n${singleName} (${singleCode})`);
+    setSingleName("");
+    setSingleCode("");
   };
 
-  // File change, preview, import handlers
-  const handleFileChange = (e) => {
-    setFileSelected(!!e.target.files.length);
-    setImportEnabled(false);
-    setBulkPreview([]);
-    setBulkStats({ valid: 0, invalid: 0 });
-    setParsedRows([]);
-  };
+  // CSV utils
+  function parseCSV(text) {
+    const [headerLine, ...rows] = text.split(/\r?\n/).filter(Boolean);
+    const headers = splitCsvLine(headerLine).map(h => h.trim());
+    return rows.map(line => {
+      const cols = splitCsvLine(line);
+      let obj = {};
+      headers.forEach((h, idx) => obj[h] = cols[idx] ?? "");
+      return obj;
+    });
+  }
 
-  const handlePreview = (e) => {
-    e.preventDefault();
-    if (!fileInputRef.current.files.length) return;
-    const file = fileInputRef.current.files[0];
-    const ext = file.name.split(".").pop().toLowerCase();
-    if (ext === "csv") return readCsv(file);
-    if (ext === "xlsx") return readXlsx(file);
-    alert("Unsupported file. Please upload .xlsx or .csv");
-  };
+  function splitCsvLine(line) {
+    // Minimal for quoted CSVs
+    const result = [], re = /("([^"]|"")*"|[^,]*)(,|$)/g;
+    line.replace(re, (m, field) => result.push(field.replace(/^"|"$/g, '').replace(/""/g, '"')));
+    if (result[result.length-1] === "") result.pop(); // Remove trailing
+    return result;
+  }
 
+  // Bulk helpers
   function validateRows(rows) {
-    const regex = /^[a-z]{3}\/[a-z]{3}\/\d{2}\/\d{3}$/;
-    const existing = getStudents();
     return rows.map(r => {
       const name = (r.Name ?? r.name ?? "").toString().trim();
       const code = (r.Code ?? r.code ?? "").toString().trim();
       let valid = true, reason = "";
       if (!name || !code) { valid = false; reason = "Missing name or code"; }
-      else if (!regex.test(code)) { valid = false; reason = "Invalid code format"; }
-      else if (existing.some(s => s.code.toLowerCase() === code.toLowerCase())) { valid = false; reason = "Duplicate (existing)"; }
+      else if (!CODE_REGEX.test(code)) { valid = false; reason = "Invalid code format"; }
+      else if (students.some(s => s.code.toLowerCase() === code.toLowerCase())) { valid = false; reason = "Duplicate (existing)"; }
       return { name, code, valid, reason };
     });
   }
 
-  function renderPreview(rows) {
-    setBulkPreview(rows);
-    setBulkStats({
-      valid: rows.filter(r => r.valid).length,
-      invalid: rows.filter(r => !r.valid).length,
-    });
-    setImportEnabled(rows.some(r => r.valid));
-  }
-
-  function readCsv(file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = reader.result;
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-      if (lines.length < 2) return renderPreview([]);
-      const headers = lines[0].split(",").map(h => h.trim());
-      const rows = lines.slice(1).map(line => {
-        const cols = line.split(",");
-        let obj = {};
-        headers.forEach((h, idx) => obj[h] = cols[idx] ?? "");
-        return obj;
-      });
-      const validated = validateRows(rows);
-      setParsedRows(validated);
-      renderPreview(validated);
-    };
-    reader.readAsText(file);
-  }
-  function readXlsx(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
-      const firstSheet = workbook.SheetNames[0];
-      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-      const validated = validateRows(rows);
-      setParsedRows(validated);
-      renderPreview(validated);
-    };
-    reader.readAsArrayBuffer(file);
-  }
-  const handleImport = (e) => {
-    e.preventDefault();
-    const students = getStudents();
-    let added = 0;
-    parsedRows.filter(r => r.valid).forEach(row => {
-      if (!students.some(s => s.code.toLowerCase() === row.code.toLowerCase())) {
-        students.push({ name: row.name, code: row.code });
-        added++;
-      }
-    });
-    setStudents(students);
-    alert(`Import complete. ${added} new records added.`);
-    fileInputRef.current.value = "";
-    setFileSelected(false);
-    setImportEnabled(false);
+  const handleFileChange = e => {
+    const f = e.target.files[0];
+    setFile(f || null);
     setParsedRows([]);
-    setBulkStats({ valid: 0, invalid: 0 });
-    setBulkPreview([]);
+    setShowPreview(false);
+    setBulkStats("");
+    setValidCount(0);
+    setInvalidCount(0);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminName");
-    navigate("/login");
+  const handlePreview = async e => {
+    e.preventDefault();
+    if (!file) return;
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === "csv") {
+      const text = await file.text();
+      const rows = parseCSV(text);
+      const validated = validateRows(rows);
+      setParsedRows(validated);
+      const v = validated.filter(r => r.valid).length, i = validated.filter(r => !r.valid).length;
+      setValidCount(v); setInvalidCount(i);
+      setShowPreview(true);
+      setBulkStats(`Preview: ${validated.length} rows — ${v} valid, ${i} invalid`);
+    } else {
+      alert("Only .csv import enabled in demo. XLSX import needs extra library in React.");
+    }
+  };
+
+  const handleImport = () => {
+    const newRows = parsedRows.filter(r => r.valid && !students.some(s => s.code.toLowerCase() === r.code.toLowerCase()));
+    setStudents([...students, ...newRows.map(r => ({ name: r.name, code: r.code }))]);
+    alert(`Import complete. ${newRows.length} new records added.`);
+    setFile(null);
+    setParsedRows([]);
+    setShowPreview(false);
+    setBulkStats("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <>
-      {/* Theme Toggle */}
-      <div className="theme-toggle" style={{
-        position: "fixed", top: 100, right: 20, width: 74, height: 38, borderRadius: 999
-      }} onClick={() => setIsDark(d => !d)}>
-        <div className="toggle-slider" style={{
-          transform: isDark ? "translateX(36px)" : "none", background: isDark ? "#0e1016" : "#fff"
-        }}>
-          <span className="toggle-icon sun-icon" style={{ opacity: isDark ? 0 : 1 }}>☀️</span>
-          <span className="toggle-icon moon-icon" style={{ opacity: isDark ? 1 : 0, position: "absolute" }}>🌙</span>
+    <div className={`add-data-root${isDark ? " dark" : ""}`}>
+      <style>{addDataCss}</style>
+      {/* Theme toggle */}
+      <div className={`theme-toggle${isDark ? " dark" : ""}`} aria-label="Toggle theme" title="Toggle theme" onClick={() => setIsDark(d => !d)}>
+        <div className="toggle-slider">
+          <span className="toggle-icon sun-icon" aria-hidden="true">☀️</span>
+          <span className="toggle-icon moon-icon" aria-hidden="true">🌙</span>
         </div>
       </div>
 
       {/* Navbar */}
       <nav className="navbar navbar-expand-lg navbar-dark fixed-top">
         <div className="container-fluid">
-          <a className="navbar-brand d-flex align-items-center" href="/dashboard">
-            <img src="/BU.png" alt="Brainware University Logo" style={{ height: 50, borderRadius: "50%", background: "#fff", padding: 3, marginRight: 10 }} />
+          <a className="navbar-brand d-flex align-items-center" href="/admin-dashboard">
+            <img src="/BU.png" alt="Brainware University Logo" />
             Admin Panel
           </a>
           <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
@@ -168,71 +296,89 @@ const AddData = () => {
               <li className="nav-item"><a className="nav-link" href="/delete-data">Delete Data</a></li>
               <li className="nav-item"><a className="nav-link" href="/change-password">Change Password</a></li>
             </ul>
-            <button className="btn btn-outline-light" onClick={handleLogout}>Logout</button>
+            <button className="btn btn-outline-light" onClick={logout}>Logout</button>
           </div>
         </div>
       </nav>
-      {/* Add Data Form */}
+
       <div className="container mt-4">
         <div className="form-card">
           <h3 className="mb-3">Add Single Entry</h3>
-          <form id="addDataForm" onSubmit={handleAdd}>
-            <input type="text" name="singleName" className="form-control mb-3" placeholder="Name" required />
-            <input type="text" name="singleCode" className="form-control mb-3"
+          <form onSubmit={handleSingleSubmit} autoComplete="off">
+            <input
+              type="text"
+              className="form-control mb-3"
+              placeholder="Name"
+              value={singleName}
+              required
+              onChange={e => setSingleName(e.target.value)}
+            />
+            <input
+              type="text"
+              className="form-control mb-3"
               placeholder="Student Code (e.g. bwu/bts/23/001)"
               pattern="^[a-z]{3}/[a-z]{3}/\d{2}/\d{3}$"
               title="Format: bwu/bts/23/001"
+              value={singleCode}
               required
+              onChange={e => setSingleCode(e.target.value)}
             />
             <button type="submit" className="btn btn-primary w-100">Submit</button>
           </form>
         </div>
+
         <div className="form-card">
           <h3 className="mb-3">Bulk Upload</h3>
-          <input ref={fileInputRef} type="file" accept=".csv,.xlsx" className="form-control mb-3" onChange={handleFileChange} />
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".csv"
+            className="form-control mb-3"
+            onChange={handleFileChange}
+          />
           <div className="d-flex gap-2 mb-3">
-            <button className="btn btn-primary flex-grow-1" disabled={!fileSelected} onClick={handlePreview}>Preview</button>
-            <button className="btn btn-warning flex-grow-1" disabled={!importEnabled} onClick={handleImport}>Import</button>
+            <button
+              className="btn btn-primary flex-grow-1"
+              onClick={handlePreview}
+              disabled={!file}
+            >Preview</button>
+            <button
+              className="btn btn-warning flex-grow-1"
+              onClick={handleImport}
+              disabled={parsedRows.filter(r => r.valid).length === 0}
+              type="button"
+            >Import</button>
           </div>
-          {bulkPreview.length > 0 &&
-            <div>
-              <div className="text-muted mb-2" style={{ display: "block" }}>
-                Preview: {bulkPreview.length} rows — {bulkStats.valid} valid, {bulkStats.invalid} invalid
-              </div>
-              <div className="table-responsive" style={{ display: "block" }}>
-                <table className="table table-sm table-hover align-middle">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Name</th>
-                      <th>Code</th>
-                      <th>Status</th>
+          {bulkStats && <div className="text-muted mb-2">{bulkStats}</div>}
+          {showPreview && (
+            <div className="table-responsive">
+              <table className="table table-sm table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Name</th><th>Code</th><th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsedRows.map((r, i) => (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
+                      <td>{escapeHtml(r.name)}</td>
+                      <td><code>{escapeHtml(r.code)}</code></td>
+                      <td>
+                        {r.valid
+                          ? <span className="badge badge-valid">valid</span>
+                          : <span className="badge badge-invalid">invalid</span>} {r.reason}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {bulkPreview.map((r, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}</td>
-                        <td>{r.name}</td>
-                        <td><code>{r.code}</code></td>
-                        <td>
-                          {r.valid ?
-                            <span className="badge badge-valid" style={{ backgroundColor: "#2e7d32" }}>valid</span> :
-                            <span className="badge badge-invalid" style={{ backgroundColor: "#c62828" }}>invalid</span>
-                          }
-                          {!r.valid && <span style={{ marginLeft: 5 }}>{r.reason}</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          }
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
-};
+}
 
 export default AddData;
