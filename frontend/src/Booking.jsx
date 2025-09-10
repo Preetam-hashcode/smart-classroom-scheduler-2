@@ -240,6 +240,7 @@ export default function Booking() {
   const timeSlots = [
     "all",
     "7-8",
+    "8-9",
     "9-10",
     "10-11",
     "11-12",
@@ -249,7 +250,7 @@ export default function Booking() {
     "15-16",
     "16-17",
     "17-18",
-    "19-20",
+    "18-19"
   ];
 
   function parseEndTimeToHour(endTime) {
