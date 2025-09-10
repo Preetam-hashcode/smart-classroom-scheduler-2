@@ -6,6 +6,9 @@ const NUM_BUILDINGS = 5;
 const NUM_FLOORS = 2;
 const NUM_ROOMS = 5;
 
+// Helper function to format room numbers as A001, A002, ...
+const formatRoomNumber = (id) => `${id.toString().padStart(3, '0')}`;
+
 const buildInitialRooms = () => {
   const rooms = [];
   let id = 1;
@@ -69,8 +72,8 @@ function BookingModal({ room, action, onConfirm, onCancel }) {
         <h3>{action === "book" ? "Confirm Booking" : "Confirm Cancellation"}</h3>
         <p>
           {action === "book"
-            ? `Do you want to book ${room.name}?`
-            : `Do you want to cancel booking for ${room.name}?`}
+            ? `Do you want to book ${formatRoomNumber(room.id)}?`
+            : `Do you want to cancel booking for ${formatRoomNumber(room.id)}?`}
         </p>
         <div className="modal-buttons">
           <button className="cancel-btn" onClick={onCancel}>
@@ -110,9 +113,9 @@ function RoomBox({ room, userRole, onRoomAction }) {
       aria-haspopup="true"
       aria-expanded={popoverVisible}
       style={{ position: "relative" }}
-      title={room.name}
+      title={formatRoomNumber(room.id)}
     >
-      <div className="room-name">{room.name}</div>
+      <div className="room-name">{formatRoomNumber(room.id)}</div>
       {popoverVisible && (
         <div
           className="room-popover"
@@ -132,7 +135,7 @@ function RoomBox({ room, userRole, onRoomAction }) {
               {isTeacher && (
                 <button
                   className="action-btn cancel"
-                  onClick={e => {
+                  onClick={(e) => {
                     e.stopPropagation();
                     onRoomAction("cancel", room);
                     setPopoverVisible(false);
@@ -146,7 +149,7 @@ function RoomBox({ room, userRole, onRoomAction }) {
           {room.status === "available" && isTeacher && (
             <button
               className="action-btn"
-              onClick={e => {
+              onClick={(e) => {
                 e.stopPropagation();
                 onRoomAction("book", room);
                 setPopoverVisible(false);
@@ -166,7 +169,7 @@ function Floor({ floorNumber, rooms, userRole, onRoomAction }) {
     <div className="floor">
       <div className="floor-label">Floor {floorNumber}</div>
       <div className="rooms-row">
-        {rooms.map(room => (
+        {rooms.map((room) => (
           <RoomBox
             key={room.id}
             room={room}
@@ -182,7 +185,7 @@ function Floor({ floorNumber, rooms, userRole, onRoomAction }) {
 function Building({ buildingNumber, rooms, userRole, onRoomAction }) {
   const floors = [];
   for (let f = 1; f <= NUM_FLOORS; f++) {
-    const floorRooms = rooms.filter(r => r.floor === f);
+    const floorRooms = rooms.filter((r) => r.floor === f);
     floors.push(
       <Floor
         key={f}
@@ -226,7 +229,7 @@ export default function Booking() {
     "15-16",
     "16-17",
     "17-18",
-    "19-20"
+    "19-20",
   ];
 
   function parseEndTimeToHour(endTime) {
@@ -244,35 +247,35 @@ export default function Booking() {
   const confirmAction = () => {
     if (!selectedRoom) return;
     if (action === "book") {
-      setRooms(prev =>
-        prev.map(room =>
+      setRooms((prev) =>
+        prev.map((room) =>
           room.id === selectedRoom.id
             ? {
                 ...room,
                 status: "booked",
                 bookedBy: user.username,
                 endTime: "18:00",
-                availableIn: null
+                availableIn: null,
               }
             : room
         )
       );
-      alert(`Classroom ${selectedRoom.name} booked successfully!`);
+      alert(`Classroom ${formatRoomNumber(selectedRoom.id)} booked successfully!`);
     } else if (action === "cancel") {
-      setRooms(prev =>
-        prev.map(room =>
+      setRooms((prev) =>
+        prev.map((room) =>
           room.id === selectedRoom.id
             ? {
                 ...room,
                 status: "available",
                 bookedBy: null,
                 endTime: null,
-                availableIn: null
+                availableIn: null,
               }
             : room
         )
       );
-      alert(`Booking for classroom ${selectedRoom.name} canceled.`);
+      alert(`Booking for classroom ${formatRoomNumber(selectedRoom.id)} canceled.`);
     }
     setModalVisible(false);
     setSelectedRoom(null);
@@ -288,9 +291,9 @@ export default function Booking() {
   const filteredByBuilding =
     buildingFilter === "all"
       ? rooms
-      : rooms.filter(r => r.building === parseInt(buildingFilter, 10));
+      : rooms.filter((r) => r.building === parseInt(buildingFilter, 10));
 
-  const filteredRooms = filteredByBuilding.filter(room => {
+  const filteredRooms = filteredByBuilding.filter((room) => {
     if (timeFilter === "all") return true;
     if (room.status === "available") return true;
     if (room.status === "booked") {
@@ -304,7 +307,7 @@ export default function Booking() {
 
   const buildings = [];
   for (let b = 1; b <= NUM_BUILDINGS; b++) {
-    const buildingRooms = filteredRooms.filter(r => r.building === b);
+    const buildingRooms = filteredRooms.filter((r) => r.building === b);
     if (buildingRooms.length > 0) {
       buildings.push(
         <Building
@@ -339,7 +342,7 @@ export default function Booking() {
           borderRadius: "8px",
           boxShadow: "0 2px 8px #0002",
           cursor: "pointer",
-          zIndex: 10
+          zIndex: 10,
         }}
       >
         Logout
@@ -348,13 +351,15 @@ export default function Booking() {
         <h1 className="header-title">Classroom Booking System</h1>
         <p className="welcome-text">
           Welcome, <strong className="username">{user.username}</strong>
-          <span className="wave-emoji" role="img" aria-label="waving hand">👋</span>
+          <span className="wave-emoji" role="img" aria-label="waving hand">
+            👋
+          </span>
         </p>
       </header>
       <section className="filters">
         <label>
           Building:
-          <select value={buildingFilter} onChange={e => setBuildingFilter(e.target.value)}>
+          <select value={buildingFilter} onChange={(e) => setBuildingFilter(e.target.value)}>
             <option value="all">All</option>
             {[...Array(NUM_BUILDINGS)].map((_, i) => (
               <option key={i + 1} value={i + 1}>
@@ -365,8 +370,8 @@ export default function Booking() {
         </label>
         <label>
           Time:
-          <select value={timeFilter} onChange={e => setTimeFilter(e.target.value)}>
-            {timeSlots.map(slot => (
+          <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)}>
+            {timeSlots.map((slot) => (
               <option key={slot} value={slot}>
                 {slot === "all" ? "All" : slot.replace("-", ":00-") + ":00"}
               </option>
