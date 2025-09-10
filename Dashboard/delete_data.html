@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Delete Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+:root{
+  /* Beach palette */
+  --beach-sand:#f9e1e0; --coral-pink:#faadb9; --mauve-rose:#bc85a3; --lavender:#9799ba; --ocean-blue:#4a7ba6;
+  /* Text */
+  --text:#1b1b1b; --text-dark:#ffffff;
+  /* Backgrounds */
+  --bg-start:var(--beach-sand); --bg-end:var(--coral-pink);
+  --bg-start-dark:#101322; --bg-end-dark:#1f2a44;
+  /* Brand gradient */
+  --brand-start:var(--mauve-rose); --brand-end:var(--lavender);
+  /* Surfaces */
+  --glass:rgba(255,255,255,0.16); --glass-dark:rgba(255,255,255,0.12);
+  /* Inputs */
+  --input:rgba(255,255,255,0.96); --input-dark:rgba(255,255,255,0.15);
+  /* Focus */
+  --focus:rgba(74,123,166,0.55);
+}
+
+/* Base */
+*{box-sizing:border-box}
+body{
+  font-family:'Nunito Sans',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:linear-gradient(135deg,var(--bg-start),var(--bg-end));
+  color:var(--text);
+  padding-top:90px;
+  transition:background 450ms ease,color 300ms ease;
+}
+body.dark{
+  background:linear-gradient(135deg,var(--bg-start-dark),var(--bg-end-dark));
+  color:var(--text-dark);
+}
+
+/* Navbar (same as add_data) */
+nav.navbar{
+  background:linear-gradient(90deg,var(--brand-start),var(--brand-end));
+  min-height:70px;
+  transition:background 450ms ease;
+}
+body.dark nav.navbar{ background:linear-gradient(90deg,var(--ocean-blue),#2a3b5f); }
+.navbar-brand img{
+  height:50px;width:auto;border-radius:50%;background:#fff;padding:3px;margin-right:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+.navbar .nav-link,.navbar .navbar-brand,.navbar .btn{ color:#fff !important; }
+.navbar .nav-link.active{ text-decoration:underline; text-underline-offset:4px; }
+
+/* Theme toggle (IDENTICAL to add_data.html) */
+.theme-toggle{
+  position:fixed; top:100px; right:20px; width:74px; height:38px; border-radius:999px;
+  background:linear-gradient(45deg,var(--brand-start),var(--brand-end));
+  box-shadow:0 8px 24px rgba(0,0,0,0.18);
+  cursor:pointer; user-select:none; z-index:1100;
+  transition:background 450ms ease, transform 150ms ease;
+}
+.theme-toggle:active{ transform:scale(0.98); }
+.theme-toggle.dark{ background:linear-gradient(45deg,var(--ocean-blue),#2a3b5f); }
+.toggle-slider{
+  position:absolute; top:4px; left:4px; width:30px; height:30px; border-radius:50%;
+  background:#ffffff; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  transition:transform 420ms cubic-bezier(.2,.8,.2,1), background 420ms ease;
+}
+.theme-toggle.dark .toggle-slider{ transform:translateX(36px); background:#0e1016; }
+.toggle-icon{ font-size:16px; transition:opacity 280ms ease; }
+.sun-icon{ opacity:1; } .moon-icon{ position:absolute; opacity:0; }
+.theme-toggle.dark .sun-icon{ opacity:0; } .theme-toggle.dark .moon-icon{ opacity:1; }
+
+/* Card + inputs */
+.form-card{
+  background:var(--glass); border-radius:16px; padding:2rem; margin:40px auto 0; max-width:460px;
+  box-shadow:0 16px 40px rgba(0,0,0,0.15); backdrop-filter:saturate(140%) blur(6px);
+  transition:background 450ms ease,color 300ms ease, transform 200ms ease;
+}
+.form-card:hover{ transform:translateY(-2px); }
+body.dark .form-card{ background:var(--glass-dark); }
+
+.form-control{
+  background:var(--input); border-radius:12px; border:1px solid rgba(0,0,0,0.08);
+  transition:background 300ms ease,color 300ms ease,border-color 200ms ease, box-shadow 200ms ease;
+}
+body.dark .form-control{
+  background:var(--input-dark); color:var(--text-dark); border-color:rgba(255,255,255,0.18);
+}
+.form-control::placeholder{ color:rgba(0,0,0,0.45); }
+body.dark .form-control::placeholder{ color:rgba(255,255,255,0.72); }
+.form-control:focus{ box-shadow:0 0 0 0.25rem var(--focus); border-color:var(--ocean-blue); outline:none; }
+
+/* Buttons */
+.btn-danger{
+  background:linear-gradient(45deg,#dc3545,#e83e8c); border:none; color:#fff;
+  transition:transform 150ms ease, filter 200ms ease;
+}
+.btn:hover{ transform:translateY(-1px); filter:brightness(1.02); }
+</style>
+</head>
+<body>
+<!-- Theme toggle (IDENTICAL markup) -->
+<div class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+  <div class="toggle-slider">
+    <span class="toggle-icon sun-icon" aria-hidden="true">☀️</span>
+    <span class="toggle-icon moon-icon" aria-hidden="true">🌙</span>
+  </div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="dashboard.html">
+      <img src="BU.png" alt="Brainware University Logo">
+      Admin Panel
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar" aria-controls="adminNavbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNavbar">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link" href="add_data.html">Add Data</a></li>
+        <li class="nav-item"><a class="nav-link active" href="delete_data.html" aria-current="page">Delete Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="change_password.html">Change Password</a></li>
+      </ul>
+      <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Card -->
+<div class="form-card">
+  <h3 class="mb-3">Delete Data</h3>
+  <form id="deleteDataForm">
+    <input type="text" id="delName" class="form-control mb-3" placeholder="Name" required />
+    <input type="text" id="delCode" class="form-control mb-3" placeholder="Student Code (e.g. bwu/bts/23/001)"
+           pattern="^[a-z]{3}/[a-z]{3}/\\d{2}/\\d{3}$" title="Format: bwu/bts/23/001" required />
+    <button type="submit" class="btn btn-danger w-100">Delete</button>
+  </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+/* IDENTICAL toggle logic to add_data.html */
+const themeToggle = document.getElementById('themeToggle');
+let isDark = localStorage.getItem("theme") === "dark";
+function applyTheme(dark){
+  document.body.classList.toggle("dark", dark);
+  themeToggle.classList.toggle("dark", dark);
+  localStorage.setItem("theme", dark ? "dark" : "light");
+}
+applyTheme(isDark);
+themeToggle.addEventListener('click', () => {
+  isDark = !isDark;
+  applyTheme(isDark);
+});
+
+/* Logout */
+function logout(){
+  localStorage.removeItem("adminName");
+  window.location.replace("login.html");
+}
+
+/* Local storage helpers */
+function getStudents(){ return JSON.parse(localStorage.getItem('students') || '[]'); }
+function setStudents(arr){ localStorage.setItem('students', JSON.stringify(arr)); }
+
+/* Delete logic */
+document.getElementById('deleteDataForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('delName').value.trim();
+  const code = document.getElementById('delCode').value.trim();
+  let students = getStudents();
+  const before = students.length;
+  students = students.filter(s => (s.code || '').toLowerCase() !== code.toLowerCase());
+  const removed = before - students.length;
+  setStudents(students);
+  alert(removed > 0 ? `Deleted:\nName: ${name}\nStudent Code: ${code}` : 'No matching record found.');
+  this.reset();
+});
+</script>
+</body>
+</html>

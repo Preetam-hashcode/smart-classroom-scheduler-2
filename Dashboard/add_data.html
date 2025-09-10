@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Add Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+:root {
+  /* Beach palette */
+  --beach-sand: #f9e1e0;
+  --coral-pink: #faadb9;
+  --mauve-rose: #bc85a3;
+  --lavender: #9799ba;
+  --ocean-blue: #4a7ba6;
+
+  /* Text */
+  --text: #1b1b1b;
+  --text-dark: #ffffff;
+
+  /* Backgrounds */
+  --bg-start: var(--beach-sand);
+  --bg-end: var(--coral-pink);
+  --bg-start-dark: #101322; /* deep navy */
+  --bg-end-dark: #1f2a44;   /* ocean slate */
+
+  /* Brand gradient */
+  --brand-start: var(--mauve-rose);
+  --brand-end: var(--lavender);
+
+  /* Surfaces */
+  --glass: rgba(255,255,255,0.16);
+  --glass-dark: rgba(255,255,255,0.12);
+
+  /* Inputs */
+  --input: rgba(255,255,255,0.96);
+  --input-dark: rgba(255,255,255,0.15);
+
+  /* Focus */
+  --focus: rgba(74,123,166,0.55);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Nunito Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: linear-gradient(135deg, var(--bg-start), var(--bg-end));
+  color: var(--text);
+  padding-top: 90px;
+  transition: background 450ms ease, color 300ms ease;
+}
+body.dark {
+  background: linear-gradient(135deg, var(--bg-start-dark), var(--bg-end-dark));
+  color: var(--text-dark);
+}
+
+/* Navbar */
+nav.navbar {
+  background: linear-gradient(90deg, var(--brand-start), var(--brand-end));
+  min-height: 70px;
+  transition: background 450ms ease;
+}
+body.dark nav.navbar {
+  background: linear-gradient(90deg, var(--ocean-blue), #2a3b5f);
+}
+.navbar-brand img {
+  height: 50px;
+  width: auto;
+  border-radius: 50%;
+  background: #fff;
+  padding: 3px;
+  margin-right: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* Theme toggle with slider + sun/moon */
+.theme-toggle {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  width: 74px;
+  height: 38px;
+  border-radius: 999px;
+  background: linear-gradient(45deg, var(--brand-start), var(--brand-end));
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  cursor: pointer;
+  user-select: none;
+  transition: background 450ms ease, transform 150ms ease;
+  z-index: 1100;
+}
+.theme-toggle:active { transform: scale(0.98); }
+.theme-toggle.dark {
+  background: linear-gradient(45deg, var(--ocean-blue), #2a3b5f);
+}
+/* Inner slider button */
+.toggle-slider {
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1), background 420ms ease;
+}
+.theme-toggle.dark .toggle-slider {
+  transform: translateX(36px);
+  background: #0e1016;
+}
+/* Icons inside slider */
+.toggle-icon {
+  font-size: 16px;
+  transition: opacity 280ms ease;
+}
+.sun-icon { opacity: 1; }
+.moon-icon { position: absolute; opacity: 0; }
+.theme-toggle.dark .sun-icon { opacity: 0; }
+.theme-toggle.dark .moon-icon { opacity: 1; }
+
+/* Cards and forms */
+.form-card {
+  background: var(--glass);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.15);
+  backdrop-filter: saturate(140%) blur(6px);
+  transition: background 450ms ease, color 300ms ease, transform 200ms ease;
+}
+.form-card:hover { transform: translateY(-2px); }
+body.dark .form-card { background: var(--glass-dark); }
+
+.form-control {
+  background: var(--input);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  transition: background 300ms ease, color 300ms ease, box-shadow 200ms ease, border-color 200ms ease;
+}
+body.dark .form-control {
+  background: var(--input-dark);
+  color: var(--text-dark);
+  border-color: rgba(255,255,255,0.18);
+}
+.form-control::placeholder { color: rgba(0,0,0,0.45); }
+body.dark .form-control::placeholder { color: rgba(255,255,255,0.7); }
+.form-control:focus {
+  box-shadow: 0 0 0 0.25rem var(--focus);
+  border-color: var(--ocean-blue);
+  outline: none;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, var(--brand-start), var(--brand-end));
+  border: none;
+  transition: transform 150ms ease, filter 200ms ease;
+}
+.btn-warning {
+  background: linear-gradient(45deg, #ffd54f, #ffb300);
+  border: none;
+  color: #111;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.02); }
+
+.table-responsive { border-radius: 12px; overflow: auto; }
+.badge-valid { background-color: #2e7d32; }
+.badge-invalid { background-color: #c62828; }
+</style>
+</head>
+<body>
+<!-- Theme toggle with sun/moon -->
+<div class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle theme">
+  <div class="toggle-slider">
+    <span class="toggle-icon sun-icon" aria-hidden="true">☀️</span>
+    <span class="toggle-icon moon-icon" aria-hidden="true">🌙</span>
+  </div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="dashboard.html">
+      <img src="BU.png" alt="Brainware University Logo">
+      Admin Panel
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNavbar">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item"><a class="nav-link active" href="add_data.html">Add Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="delete_data.html">Delete Data</a></li>
+        <li class="nav-item"><a class="nav-link" href="change_password.html">Change Password</a></li>
+      </ul>
+      <button class="btn btn-outline-light" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+  <!-- Single Entry -->
+  <div class="form-card">
+    <h3 class="mb-3">Add Single Entry</h3>
+    <form id="addDataForm">
+      <input type="text" id="singleName" class="form-control mb-3" placeholder="Name" required />
+      <input type="text" id="singleCode" class="form-control mb-3" placeholder="Student Code (e.g. bwu/bts/23/001)"
+             pattern="^[a-z]{3}/[a-z]{3}/\\d{2}/\\d{3}$" title="Format: bwu/bts/23/001" required />
+      <button type="submit" class="btn btn-primary w-100">Submit</button>
+    </form>
+  </div>
+
+  <!-- Bulk Upload -->
+  <div class="form-card">
+    <h3 class="mb-3">Bulk Upload</h3>
+    <input type="file" id="dataFile" accept=".csv,.xlsx" class="form-control mb-3" />
+    <div class="d-flex gap-2 mb-3">
+      <button id="previewBtn" class="btn btn-primary flex-grow-1" disabled>Preview</button>
+      <button id="importBtn" class="btn btn-warning flex-grow-1" disabled>Import</button>
+    </div>
+    <div id="bulkStats" class="text-muted mb-2" style="display:none;"></div>
+    <div class="table-responsive" id="previewWrap" style="display:none;">
+      <table class="table table-sm table-hover align-middle">
+        <thead><tr><th>#</th><th>Name</th><th>Code</th><th>Status</th></tr></thead>
+        <tbody id="previewBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+/* Theme toggle logic */
+const themeToggle = document.getElementById('themeToggle');
+let isDark = localStorage.getItem("theme") === "dark";
+
+function applyTheme(dark){
+  document.body.classList.toggle("dark", dark);
+  themeToggle.classList.toggle("dark", dark);
+  localStorage.setItem("theme", dark ? "dark" : "light");
+}
+applyTheme(isDark);
+
+themeToggle.addEventListener('click', () => {
+  isDark = !isDark;
+  applyTheme(isDark);
+});
+
+/* Logout */
+function logout() {
+  localStorage.removeItem("adminName");
+  window.location.replace("login.html");
+}
+
+/* Simple storage helpers */
+function getStudents(){ return JSON.parse(localStorage.getItem('students') || '[]'); }
+function setStudents(arr){ localStorage.setItem('students', JSON.stringify(arr)); }
+
+/* Single entry add */
+document.getElementById('addDataForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const name = document.getElementById('singleName').value.trim();
+  const code = document.getElementById('singleCode').value.trim();
+  const regex = /^[a-z]{3}\/[a-z]{3}\/\d{2}\/\d{3}$/;
+  if(!regex.test(code)){ alert('Invalid code format. Expected: bwu/bts/23/001'); return; }
+  const students = getStudents();
+  if(students.some(s => s.code.toLowerCase() === code.toLowerCase())){ alert('Code already exists.'); return; }
+  students.push({ name, code });
+  setStudents(students);
+  alert(`Added:\n${name} (${code})`);
+  this.reset();
+});
+
+/* Bulk upload */
+const fileInput = document.getElementById('dataFile');
+const previewBtn = document.getElementById('previewBtn');
+const importBtn = document.getElementById('importBtn');
+const previewWrap = document.getElementById('previewWrap');
+const previewBody = document.getElementById('previewBody');
+const bulkStats = document.getElementById('bulkStats');
+let parsedRows = [];
+
+fileInput.addEventListener('change', () => {
+  previewBtn.disabled = !fileInput.files.length;
+  importBtn.disabled = true;
+  previewWrap.style.display = 'none';
+  bulkStats.style.display = 'none';
+  previewBody.innerHTML = '';
+  parsedRows = [];
+});
+
+previewBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  if(!fileInput.files.length) return;
+  const file = fileInput.files[0];
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext === 'csv'){ readCsv(file); }
+  else if(ext === 'xlsx'){ readXlsx(file); }
+  else { alert('Unsupported file. Please upload .xlsx or .csv'); }
+});
+
+importBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  const students = getStudents();
+  let added = 0;
+  parsedRows.filter(r => r.valid).forEach(row => {
+    if(!students.some(s => s.code.toLowerCase() === row.code.toLowerCase())){
+      students.push({ name: row.name, code: row.code });
+      added++;
+    }
+  });
+  setStudents(students);
+  alert(`Import complete. ${added} new records added.`);
+  fileInput.value = '';
+  previewBtn.disabled = true;
+  importBtn.disabled = true;
+  previewWrap.style.display = 'none';
+  bulkStats.style.display = 'none';
+  previewBody.innerHTML = '';
+  parsedRows = [];
+});
+
+function validateRows(rows){
+  const regex = /^[a-z]{3}\/[a-z]{3}\/\d{2}\/\d{3}$/;
+  const existing = getStudents();
+  return rows.map(r => {
+    const name = (r.Name ?? r.name ?? '').toString().trim();
+    const code = (r.Code ?? r.code ?? '').toString().trim();
+    let valid = true, reason = '';
+    if(!name || !code){ valid = false; reason = 'Missing name or code'; }
+    else if(!regex.test(code)){ valid = false; reason = 'Invalid code format'; }
+    else if(existing.some(s => s.code.toLowerCase() === code.toLowerCase())){ valid = false; reason = 'Duplicate (existing)'; }
+    return { name, code, valid, reason };
+  });
+}
+
+function renderPreview(rows){
+  previewBody.innerHTML = '';
+  let validCount = 0, invalidCount = 0;
+  rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td>${escapeHtml(r.name)}</td>
+      <td><code>${escapeHtml(r.code)}</code></td>
+      <td>${r.valid ? '<span class="badge badge-valid">valid</span>' : '<span class="badge badge-invalid">invalid</span> ' + escapeHtml(r.reason)}</td>
+    `;
+    previewBody.appendChild(tr);
+    r.valid ? validCount++ : invalidCount++;
+  });
+  previewWrap.style.display = 'block';
+  bulkStats.style.display = 'block';
+  bulkStats.textContent = `Preview: ${rows.length} rows — ${validCount} valid, ${invalidCount} invalid`;
+  importBtn.disabled = validCount === 0;
+}
+
+function readCsv(file){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = reader.result;
+    const rows = csvToObjects(text);
+    parsedRows = validateRows(rows);
+    renderPreview(parsedRows);
+  };
+  reader.readAsText(file);
+}
+
+function csvToObjects(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if(lines.length < 2) return [];
+  const headers = splitCsvLine(lines[0]).map(h => h.trim());
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    const cols = splitCsvLine(lines[i]);
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = cols[idx] ?? '');
+    out.push(obj);
+  }
+  return out;
+}
+
+function splitCsvLine(line){
+  const result = []; let cur = ''; let inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){ if(line[i+1] === '"'){ cur+='"'; i++; } else { inQuotes = !inQuotes; } }
+    else if(ch === ',' && !inQuotes){ result.push(cur); cur=''; }
+    else { cur += ch; }
+  }
+  result.push(cur);
+  return result;
+}
+
+function readXlsx(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: 'array' });
+    const firstSheet = workbook.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+    parsedRows = validateRows(rows);
+    renderPreview(parsedRows);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function escapeHtml(s){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+</script>
+</body>
+</html>
