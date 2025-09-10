@@ -1,13 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 
 const NUM_BUILDINGS = 5;
 const NUM_FLOORS = 2;
 const NUM_ROOMS = 5;
-
-// Helper function to format room numbers as A001, A002, ...
-const formatRoomNumber = (id) => `${id.toString().padStart(3, '0')}`;
 
 const buildInitialRooms = () => {
   const rooms = [];
@@ -65,102 +63,136 @@ const buildInitialRooms = () => {
   return rooms;
 };
 
+const formatRoomNumber = (id) => `${id.toString().padStart(3, "0")}`;
+
+// Modal with confirmation Yes/No dialog
 function BookingModal({ room, action, onConfirm, onCancel }) {
-  return (
+  return ReactDOM.createPortal(
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal-box">
         <h3>{action === "book" ? "Confirm Booking" : "Confirm Cancellation"}</h3>
         <p>
           {action === "book"
-            ? `Do you want to book ${formatRoomNumber(room.id)}?`
-            : `Do you want to cancel booking for ${formatRoomNumber(room.id)}?`}
+            ? `Do you want to book room ${formatRoomNumber(room.id)}?`
+            : `Do you want to cancel booking for room ${formatRoomNumber(room.id)}?`}
         </p>
         <div className="modal-buttons">
           <button className="cancel-btn" onClick={onCancel}>
-            {action === "book" ? "Cancel" : "No"}
+            No
           </button>
           <button className="confirm-btn" onClick={onConfirm}>
-            {action === "book" ? "Confirm" : "Yes"}
+            Yes
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
 function RoomBox({ room, userRole, onRoomAction }) {
-  const [popoverVisible, setPopoverVisible] = React.useState(false);
+  const [popoverVisible, setPopoverVisible] = useState(false);
+  const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 });
+  const boxRef = useRef(null);
   const isTeacher = userRole === "teacher";
+
   let boxClass = "room-box";
   if (room.status === "available") boxClass += " available";
   else if (room.status === "booked") boxClass += " booked";
   else if (room.status === "soon") boxClass += " soon";
-  React.useEffect(() => {
+
+  useEffect(() => {
     function handleClickOutside(e) {
-      if (!e.target.closest(`#room-${room.id}`)) setPopoverVisible(false);
+      if (boxRef.current && !boxRef.current.contains(e.target)) {
+        setPopoverVisible(false);
+      }
     }
     if (popoverVisible) document.addEventListener("mousedown", handleClickOutside);
+    else document.removeEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [popoverVisible, room.id]);
+  }, [popoverVisible]);
+
+  useEffect(() => {
+    if (popoverVisible && boxRef.current) {
+      const rect = boxRef.current.getBoundingClientRect();
+      setPopoverPos({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+    }
+  }, [popoverVisible]);
+
   return (
-    <div
-      id={`room-${room.id}`}
-      className={boxClass}
-      onClick={() => setPopoverVisible((v) => !v)}
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && setPopoverVisible((v) => !v)}
-      role="button"
-      aria-haspopup="true"
-      aria-expanded={popoverVisible}
-      style={{ position: "relative" }}
-      title={formatRoomNumber(room.id)}
-    >
-      <div className="room-name">{formatRoomNumber(room.id)}</div>
-      {popoverVisible && (
-        <div
-          className="room-popover"
-          style={{ pointerEvents: "auto" }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {room.status === "available" && userRole === "student" && <div>✅ Available</div>}
-          {(room.status === "booked" || room.status === "soon") && (
-            <>
-              <div>
-                <strong>Teacher:</strong> {room.bookedBy || "N/A"}
-              </div>
-              <div>
-                <strong>{room.status === "booked" ? "Free at:" : "Available in:"}</strong>{" "}
-                {room.status === "booked" ? room.endTime || "N/A" : `${room.availableIn || "N/A"}h`}
-              </div>
-              {isTeacher && (
-                <button
-                  className="action-btn cancel"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRoomAction("cancel", room);
-                    setPopoverVisible(false);
-                  }}
-                >
-                  Cancel Booking
-                </button>
-              )}
-            </>
-          )}
-          {room.status === "available" && isTeacher && (
-            <button
-              className="action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRoomAction("book", room);
-                setPopoverVisible(false);
-              }}
-            >
-              Book Room
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <>
+      <div
+        ref={boxRef}
+        id={`room-${room.id}`}
+        className={boxClass}
+        onClick={() => setPopoverVisible((v) => !v)}
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && setPopoverVisible((v) => !v)}
+        role="button"
+        aria-haspopup="true"
+        aria-expanded={popoverVisible}
+        title={room.name}
+        style={{ position: "relative" }}
+      >
+        <div className="room-name">{formatRoomNumber(room.id)}</div>
+      </div>
+      {popoverVisible &&
+        ReactDOM.createPortal(
+          <div
+            className="room-popover"
+            style={{
+              pointerEvents: "auto",
+              position: "fixed",
+              top: popoverPos.top,
+              left: popoverPos.left,
+              zIndex: 9999,
+              transform: "translateY(8px)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {room.status === "available" && userRole === "student" && <div>✅ Available</div>}
+            {(room.status === "booked" || room.status === "soon") && (
+              <>
+                <div>
+                  <strong>Teacher:</strong> {room.bookedBy || "N/A"}
+                </div>
+                <div>
+                  <strong>{room.status === "booked" ? "Free at:" : "Available in:"}</strong>{" "}
+                  {room.status === "booked" ? room.endTime || "N/A" : `${room.availableIn || "N/A"}h`}
+                </div>
+                {isTeacher && (
+                  <button
+                    className="action-btn cancel"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRoomAction("cancel", room);
+                      setPopoverVisible(false);
+                    }}
+                  >
+                    Cancel Booking
+                  </button>
+                )}
+              </>
+            )}
+            {room.status === "available" && isTeacher && (
+              <button
+                className="action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRoomAction("book", room);
+                  setPopoverVisible(false);
+                }}
+              >
+                Book Room
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 
@@ -170,12 +202,7 @@ function Floor({ floorNumber, rooms, userRole, onRoomAction }) {
       <div className="floor-label">Floor {floorNumber}</div>
       <div className="rooms-row">
         {rooms.map((room) => (
-          <RoomBox
-            key={room.id}
-            room={room}
-            userRole={userRole}
-            onRoomAction={onRoomAction}
-          />
+          <RoomBox key={room.id} room={room} userRole={userRole} onRoomAction={onRoomAction} />
         ))}
       </div>
     </div>
@@ -187,13 +214,7 @@ function Building({ buildingNumber, rooms, userRole, onRoomAction }) {
   for (let f = 1; f <= NUM_FLOORS; f++) {
     const floorRooms = rooms.filter((r) => r.floor === f);
     floors.push(
-      <Floor
-        key={f}
-        floorNumber={f}
-        rooms={floorRooms}
-        userRole={userRole}
-        onRoomAction={onRoomAction}
-      />
+      <Floor key={f} floorNumber={f} rooms={floorRooms} userRole={userRole} onRoomAction={onRoomAction} />
     );
   }
   return (
@@ -205,7 +226,6 @@ function Building({ buildingNumber, rooms, userRole, onRoomAction }) {
 }
 
 export default function Booking() {
-  // Get user info (after login) from router state (reload protection: student fallback)
   const location = useLocation();
   const navigate = useNavigate();
   const user = location.state?.user || { username: "Unknown", role: "student" };
@@ -244,42 +264,47 @@ export default function Booking() {
     setModalVisible(true);
   };
 
+  // Confirm modal action with simulated server delay and confirmation messages
   const confirmAction = () => {
     if (!selectedRoom) return;
-    if (action === "book") {
-      setRooms((prev) =>
-        prev.map((room) =>
-          room.id === selectedRoom.id
-            ? {
-                ...room,
-                status: "booked",
-                bookedBy: user.username,
-                endTime: "18:00",
-                availableIn: null,
-              }
-            : room
-        )
-      );
-      alert(`Classroom ${formatRoomNumber(selectedRoom.id)} booked successfully!`);
-    } else if (action === "cancel") {
-      setRooms((prev) =>
-        prev.map((room) =>
-          room.id === selectedRoom.id
-            ? {
-                ...room,
-                status: "available",
-                bookedBy: null,
-                endTime: null,
-                availableIn: null,
-              }
-            : room
-        )
-      );
-      alert(`Booking for classroom ${formatRoomNumber(selectedRoom.id)} canceled.`);
-    }
+
+    // Simulate server request with async delay
     setModalVisible(false);
-    setSelectedRoom(null);
-    setAction("");
+    setTimeout(() => {
+      if (action === "book") {
+        setRooms((prev) =>
+          prev.map((room) =>
+            room.id === selectedRoom.id
+              ? {
+                  ...room,
+                  status: "booked",
+                  bookedBy: user.username,
+                  endTime: "18:00",
+                  availableIn: null,
+                }
+              : room
+          )
+        );
+        alert(`Classroom ${formatRoomNumber(selectedRoom.id)} booked successfully!`);
+      } else if (action === "cancel") {
+        setRooms((prev) =>
+          prev.map((room) =>
+            room.id === selectedRoom.id
+              ? {
+                  ...room,
+                  status: "available",
+                  bookedBy: null,
+                  endTime: null,
+                  availableIn: null,
+                }
+              : room
+          )
+        );
+        alert(`Booking for classroom ${formatRoomNumber(selectedRoom.id)} canceled.`);
+      }
+      setSelectedRoom(null);
+      setAction("");
+    }, 500); // Simulate 500ms delay (server)
   };
 
   const cancelModal = () => {
@@ -288,19 +313,11 @@ export default function Booking() {
     setAction("");
   };
 
-  const filteredByBuilding =
-    buildingFilter === "all"
-      ? rooms
-      : rooms.filter((r) => r.building === parseInt(buildingFilter, 10));
+  const filteredByBuilding = buildingFilter === "all" ? rooms : rooms.filter((r) => r.building === parseInt(buildingFilter, 10));
 
   const filteredRooms = filteredByBuilding.filter((room) => {
     if (timeFilter === "all") return true;
     if (room.status === "available") return true;
-    if (room.status === "booked") {
-      const hour = parseEndTimeToHour(room.endTime);
-      const [start, end] = timeFilter.split("-").map(Number);
-      return hour >= start && hour < end;
-    }
     if (room.status === "soon") return true;
     return false;
   });
@@ -310,18 +327,11 @@ export default function Booking() {
     const buildingRooms = filteredRooms.filter((r) => r.building === b);
     if (buildingRooms.length > 0) {
       buildings.push(
-        <Building
-          key={b}
-          buildingNumber={b}
-          rooms={buildingRooms}
-          userRole={user.role}
-          onRoomAction={handleRoomAction}
-        />
+        <Building key={b} buildingNumber={b} rooms={buildingRooms} userRole={user.role} onRoomAction={handleRoomAction} />
       );
     }
   }
 
-  // Logout
   function logout() {
     navigate("/");
   }
@@ -351,9 +361,7 @@ export default function Booking() {
         <h1 className="header-title">Classroom Booking System</h1>
         <p className="welcome-text">
           Welcome, <strong className="username">{user.username}</strong>
-          <span className="wave-emoji" role="img" aria-label="waving hand">
-            👋
-          </span>
+          <span className="wave-emoji" role="img" aria-label="waving hand">👋</span>
         </p>
       </header>
       <section className="filters">
@@ -362,9 +370,7 @@ export default function Booking() {
           <select value={buildingFilter} onChange={(e) => setBuildingFilter(e.target.value)}>
             <option value="all">All</option>
             {[...Array(NUM_BUILDINGS)].map((_, i) => (
-              <option key={i + 1} value={i + 1}>
-                Building {i + 1}
-              </option>
+              <option key={i + 1} value={i + 1}>Building {i + 1}</option>
             ))}
           </select>
         </label>
@@ -381,12 +387,7 @@ export default function Booking() {
       </section>
       <div className="buildings-container">{buildings}</div>
       {modalVisible && selectedRoom && (
-        <BookingModal
-          room={selectedRoom}
-          action={action}
-          onConfirm={confirmAction}
-          onCancel={cancelModal}
-        />
+        <BookingModal room={selectedRoom} action={action} onConfirm={confirmAction} onCancel={cancelModal} />
       )}
     </div>
   );
